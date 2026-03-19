@@ -50,6 +50,8 @@ export interface ColumnConfig {
   label: string;
   type: 'text' | 'select';
   options?: readonly string[];
+  /** When true, clicking the column header toggles numeric ascending/descending sort. */
+  sortable?: boolean;
 }
 
 // ── Jobs ─────────────────────────────────────────────────────────────────────
@@ -60,15 +62,25 @@ export type JobType = (typeof JOB_TYPES)[number];
 export const JOB_FUNCTIONS = ['Commercial', 'Operate', 'Marketing'] as const;
 export type JobFunction = (typeof JOB_FUNCTIONS)[number];
 
+export const SOURCE_OPTIONS = [
+  'Sourced by Tony',
+  'Sourced by Andrea',
+  'Referral',
+  'Applied to Job Ad',
+] as const;
+export type SourceValue = (typeof SOURCE_OPTIONS)[number];
+
 export interface Job {
   id: string;
   type: JobType;
   priority?: string | null;
   role_name?: string | null;
+  new_hire_name?: string | null;
   start_date?: string | null;
   recruiting_owner?: string | null;
   hiring_manager?: string | null;
   function?: JobFunction | string | null;
+  source?: SourceValue | string | null;
   notes?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
@@ -76,13 +88,30 @@ export interface Job {
 
 export type JobInsert = Omit<Job, 'id' | 'created_at' | 'updated_at'>;
 
+/** Column layout for Open and Budgeted dashboards. */
 export const JOB_COLUMNS: ColumnConfig[] = [
-  { key: 'priority',         label: 'Priority',          type: 'text' },
+  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true },
   { key: 'role_name',        label: 'Role Name',         type: 'text' },
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
   { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
   { key: 'function',         label: 'Function',          type: 'select', options: JOB_FUNCTIONS },
+  { key: 'notes',            label: 'Notes',             type: 'text' },
+];
+
+/** Column layout for the Hired dashboard.
+ *  - No Priority column.
+ *  - New Hire Name immediately after Role Name.
+ *  - Source dropdown before Notes.
+ */
+export const HIRED_JOB_COLUMNS: ColumnConfig[] = [
+  { key: 'role_name',        label: 'Role Name',         type: 'text' },
+  { key: 'new_hire_name',    label: 'New Hire Name',     type: 'text' },
+  { key: 'start_date',       label: 'Start Date',        type: 'text' },
+  { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
+  { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
+  { key: 'function',         label: 'Function',          type: 'select', options: JOB_FUNCTIONS },
+  { key: 'source',           label: 'Source',            type: 'select', options: SOURCE_OPTIONS },
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];
 

@@ -1,7 +1,6 @@
 'use client';
-import { memo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import type React from 'react';
-import { useState } from 'react';
 import { TrashIcon } from '@/components/icons';
 import ContextMenu from '@/components/ContextMenu';
 import type { ColumnConfig } from '@/lib/types';
@@ -120,6 +119,60 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
 
   const displayVal = (row: Row, col: string) => (row[col] ?? '') as string;
 
+  // ── Sort ─────────────────────────────────────────────────────────────────
+  // Only columns with sortable:true participate. Numeric natural sort —
+  // parseFloat handles '10' > '2' correctly. Blank/non-numeric values are
+  // always pushed to the bottom regardless of sort direction.
+
+  type SortDir = 'asc' | 'desc';
+  const [sortState, setSortState] = useState<{ col: string; dir: SortDir } | null>(null);
+
+  const toggleSort = (col: ColumnConfig) => {
+    if (!col.sortable) return;
+    setSortState((prev) =>
+      prev?.col === col.key
+        ? { col: col.key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+        : { col: col.key, dir: 'asc' }
+    );
+  };
+
+  const sortedRows = useMemo(() => {
+    if (!sortState) return rows;
+    const { col, dir } = sortState;
+    return [...rows].sort((a, b) => {
+      const rawA = String(a[col] ?? '').trim();
+      const rawB = String(b[col] ?? '').trim();
+      const numA = parseFloat(rawA);
+      const numB = parseFloat(rawB);
+      const emptyA = rawA === '' || isNaN(numA);
+      const emptyB = rawB === '' || isNaN(numB);
+      // Blanks always sink to the bottom
+      if (emptyA && emptyB) return 0;
+      if (emptyA) return 1;
+      if (emptyB) return -1;
+      return dir === 'asc' ? numA - numB : numB - numA;
+    });
+  }, [rows, sortState]);
+
+  const sortIcon = (col: ColumnConfig) => {
+    if (!col.sortable) return null;
+    if (sortState?.col !== col.key) {
+      // Always visible at low opacity — telegraphs that the column is clickable.
+      // Jumps to full opacity on hover.
+      return (
+        <span className="opacity-30 group-hover/th:opacity-100 text-[10px] ml-1 transition-opacity">
+          ↕
+        </span>
+      );
+    }
+    // Active sort — full opacity, blue to confirm direction.
+    return (
+      <span className="text-blue-400 text-[10px] ml-1">
+        {sortState.dir === 'asc' ? '↑' : '↓'}
+      </span>
+    );
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -138,7 +191,18 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
           <thead className="bg-slate-800/50 text-slate-400 text-xs uppercase tracking-wide">
             <tr>
               {columns.map((col) => (
-                <th key={col.key} className="p-3">{col.label}</th>
+                <th
+                  key={col.key}
+                  className={`p-3 group/th whitespace-nowrap ${
+                    col.sortable
+                      ? 'cursor-pointer select-none hover:text-slate-200 transition-colors'
+                      : ''
+                  } ${sortState?.col === col.key ? 'text-slate-200' : ''}`}
+                  onClick={() => toggleSort(col)}
+                >
+                  {col.label}
+                  {sortIcon(col)}
+                </th>
               ))}
               <th className="p-3 w-12" />
             </tr>
@@ -199,8 +263,8 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
               </tr>
             )}
 
-            {/* ── Existing rows ── */}
-            {rows.map((row) => (
+            {/* ── Existing rows (sorted) ── */}
+            {sortedRows.map((row) => (
               <tr key={row.id} className="group border-t border-slate-800 hover:bg-slate-800/20 transition-colors">
                 {columns.map((col) => (
                   <td key={col.key} className={cellCls(row.id, col.key)}>

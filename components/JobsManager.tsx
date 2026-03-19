@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useCallback } from 'react';
-import { JOB_COLUMNS, type Job, type JobInsert, type JobType } from '@/lib/types';
+import { JOB_COLUMNS, HIRED_JOB_COLUMNS, type Job, type JobInsert, type JobType } from '@/lib/types';
 import GenericSpreadsheet from '@/components/GenericSpreadsheet';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -59,15 +59,22 @@ export default function JobsManager({
   // This adapter stamps the current view type and builds the full JobInsert
   // before handing off to AppShell's mutation handler.
 
+  // activeColumns drives both the table header and the insert-row form.
+  // Swapping it here is the only change needed — GenericSpreadsheet and
+  // AppShell require no modifications.
+  const activeColumns = view === 'hired' ? HIRED_JOB_COLUMNS : JOB_COLUMNS;
+
   const handleInsertRow = useCallback(async (data: Record<string, string>) => {
     const payload: JobInsert = {
       type:             view as JobType,
       priority:         data.priority         || null,
       role_name:        data.role_name        || null,
+      new_hire_name:    data.new_hire_name    || null,
       start_date:       data.start_date       || null,
       recruiting_owner: data.recruiting_owner || null,
       hiring_manager:   data.hiring_manager   || null,
       function:         (data.function        || null) as Job['function'],
+      source:           (data.source          || null) as Job['source'],
       notes:            data.notes            || null,
     };
     await onAddJob(payload);
@@ -120,7 +127,7 @@ export default function JobsManager({
         </header>
 
         <GenericSpreadsheet
-          columns={JOB_COLUMNS}
+          columns={activeColumns}
           rows={jobsByType[view] as (Job & Record<string, string | null | undefined>)[]}
           onSaveCell={onUpdateJob}
           onInsertRow={handleInsertRow}
