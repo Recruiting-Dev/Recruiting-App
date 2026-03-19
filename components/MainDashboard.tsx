@@ -1,50 +1,36 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useMemo } from 'react';
 import { type Candidate, type CandidateInsert } from '@/lib/types';
 import LandingScreen from '@/components/LandingScreen';
 import CandidateSheet from '@/components/CandidateSheet';
 import NonCommercialHub from '@/components/NonCommercialHub';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 type View = 'landing' | 'commercial' | 'non-commercial';
 
-export default function MainDashboard() {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+interface Props {
+  candidates: Candidate[];
+  onUpdateCandidate: (id: string, field: keyof CandidateInsert, value: string) => Promise<void>;
+  onAddCandidate: (data: CandidateInsert) => Promise<void>;
+  onDeleteCandidate: (id: string) => Promise<void>;
+  onSwitchToJobs: () => void;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+//
+// Manages only UI state (which view is active, which role is selected).
+// All data and mutations live in AppShell and are passed as props.
+
+export default function MainDashboard({
+  candidates,
+  onUpdateCandidate,
+  onAddCandidate,
+  onDeleteCandidate,
+  onSwitchToJobs,
+}: Props) {
   const [view, setView] = useState<View>('landing');
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-
-  // ── Data fetching ──────────────────────────────────────────────────────────
-
-  const fetchCandidates = async () => {
-    const { data } = await supabase.from('candidates').select('*').order('created_at', { ascending: false });
-    if (data) setCandidates(data as Candidate[]);
-  };
-
-  useEffect(() => { fetchCandidates(); }, []);
-
-  // ── Mutations ──────────────────────────────────────────────────────────────
-
-  const updateCandidate = async (id: string, field: keyof CandidateInsert, value: string) => {
-    const prev = candidates;
-    setCandidates((cs) => cs.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
-    const { error } = await supabase.from('candidates').update({ [field]: value }).eq('id', id);
-    if (error) { setCandidates(prev); alert('Error saving: ' + error.message); }
-  };
-
-  const addCandidate = async (data: CandidateInsert) => {
-    const { error } = await supabase.from('candidates').insert([data]);
-    if (error) { alert('Error adding candidate: ' + error.message); return; }
-    await fetchCandidates();
-  };
-
-  const deleteCandidate = async (id: string) => {
-    if (!window.confirm('Delete this candidate?')) return;
-    const prev = candidates;
-    setCandidates((cs) => cs.filter((c) => c.id !== id));
-    const { error } = await supabase.from('candidates').delete().eq('id', id);
-    if (error) { setCandidates(prev); alert('Error deleting: ' + error.message); }
-  };
-
-  // ── Derived ────────────────────────────────────────────────────────────────
 
   const commercialCandidates = useMemo(
     () => candidates.filter((c) => (c.category ?? '').toLowerCase() === 'commercial'),
@@ -56,8 +42,6 @@ export default function MainDashboard() {
     [candidates],
   );
 
-  // ── Navigation ─────────────────────────────────────────────────────────────
-
   const goToLanding = () => { setView('landing'); setSelectedRole(null); };
 
   const handleCategorySelect = (category: 'commercial' | 'non-commercial') => {
@@ -65,11 +49,18 @@ export default function MainDashboard() {
     setSelectedRole(null);
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Landing ────────────────────────────────────────────────────────────────
 
   if (view === 'landing') {
-    return <LandingScreen onSelect={handleCategorySelect} />;
+    return (
+      <LandingScreen
+        onSelect={handleCategorySelect}
+        onJobsClick={onSwitchToJobs}
+      />
+    );
   }
+
+  // ── Pipeline views ─────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 p-8">
@@ -88,9 +79,9 @@ export default function MainDashboard() {
             </header>
             <CandidateSheet
               candidates={commercialCandidates}
-              onSaveCell={updateCandidate}
-              onDelete={deleteCandidate}
-              onInsertRow={(data) => addCandidate({ ...data, category: 'commercial' })}
+              onSaveCell={onUpdateCandidate}
+              onDelete={onDeleteCandidate}
+              onInsertRow={(data) => onAddCandidate({ ...data, category: 'commercial' })}
             />
           </>
         )}
@@ -110,9 +101,9 @@ export default function MainDashboard() {
               candidates={nonCommercialCandidates}
               selectedRole={selectedRole}
               onSelectRole={setSelectedRole}
-              onSaveCell={updateCandidate}
-              onDelete={deleteCandidate}
-              onInsertRow={(data) => addCandidate({ ...data, category: 'non-commercial' })}
+              onSaveCell={onUpdateCandidate}
+              onDelete={onDeleteCandidate}
+              onInsertRow={(data) => onAddCandidate({ ...data, category: 'non-commercial' })}
               onGoHome={goToLanding}
             />
           </>

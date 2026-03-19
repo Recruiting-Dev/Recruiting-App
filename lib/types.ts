@@ -43,6 +43,51 @@ export interface Req {
   created_at?: string | null;
 }
 
+// ── Generic spreadsheet ───────────────────────────────────────────────────────
+
+export interface ColumnConfig {
+  key: string;
+  label: string;
+  type: 'text' | 'select';
+  options?: readonly string[];
+}
+
+// ── Jobs ─────────────────────────────────────────────────────────────────────
+
+export const JOB_TYPES = ['open', 'hired', 'budgeted'] as const;
+export type JobType = (typeof JOB_TYPES)[number];
+
+export const JOB_FUNCTIONS = ['Commercial', 'Operate', 'Marketing'] as const;
+export type JobFunction = (typeof JOB_FUNCTIONS)[number];
+
+export interface Job {
+  id: string;
+  type: JobType;
+  priority?: string | null;
+  role_name?: string | null;
+  start_date?: string | null;
+  recruiting_owner?: string | null;
+  hiring_manager?: string | null;
+  function?: JobFunction | string | null;
+  notes?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export type JobInsert = Omit<Job, 'id' | 'created_at' | 'updated_at'>;
+
+export const JOB_COLUMNS: ColumnConfig[] = [
+  { key: 'priority',         label: 'Priority',          type: 'text' },
+  { key: 'role_name',        label: 'Role Name',         type: 'text' },
+  { key: 'start_date',       label: 'Start Date',        type: 'text' },
+  { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
+  { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
+  { key: 'function',         label: 'Function',          type: 'select', options: JOB_FUNCTIONS },
+  { key: 'notes',            label: 'Notes',             type: 'text' },
+];
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
 export function normalizeStatus(raw: string | null | undefined): string {
   const s = (raw ?? '').toString().trim().toLowerCase();
   if (['active', 'started', 'hold', 'on hold', 'offer'].includes(s)) return 'active';
