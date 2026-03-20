@@ -112,6 +112,27 @@ export const HIRED_JOB_COLUMNS: ColumnConfig[] = [
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];
 
+// ── Permissions ──────────────────────────────────────────────────────────────
+
+/** Three distinct access tiers. */
+export type UserRole = 'admin' | 'global_commercial' | 'manager';
+
+export interface UserPermissions {
+  /** True while the profiles/user_roles queries are in-flight. */
+  loading: boolean;
+  role: UserRole;
+  /**
+   * Job IDs this user is explicitly assigned to (managers only).
+   * Admins and global_commercial users ignore this field.
+   */
+  allowedJobIds: string[];
+  /**
+   * Role name strings derived from allowedJobIds + the jobs array.
+   * Used to filter candidate rows for managers.
+   */
+  allowedRoleNames: string[];
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 export function normalizeStatus(raw: string | null | undefined): string {
