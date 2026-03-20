@@ -13,10 +13,11 @@ interface Props {
   onDelete: (id: string) => Promise<void>;
   onInsertRow?: (data: Omit<CandidateInsert, 'category'>) => Promise<void>;
   onGoHome: () => void;
+  roleOptions?: string[];
 }
 
 export default function NonCommercialHub({
-  candidates, selectedRole, onSelectRole, onSaveCell, onDelete, onInsertRow, onGoHome,
+  candidates, selectedRole, onSelectRole, onSaveCell, onDelete, onInsertRow, onGoHome, roleOptions,
 }: Props) {
   // Context menu state — only used in the role-grid / empty-state view.
   // CandidateSheet owns its own context menu when a role is selected.
@@ -78,6 +79,7 @@ export default function NonCommercialHub({
           onDelete={onDelete}
           onInsertRow={onInsertRow}
           defaultRole={selectedRole}
+          roleOptions={roleOptions}
         />
       </div>
     );
@@ -156,6 +158,7 @@ export default function NonCommercialHub({
               setShowInsertSheet(false);
             }}
             initialInserting
+            roleOptions={roleOptions}
           />
         </div>
       )}

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   type Candidate, type CandidateInsert,
@@ -111,6 +111,18 @@ export default function AppShell() {
     }
   }, []);
 
+  // ── Derived: open job titles for the Role Name dropdown ───────────────────
+  // Filters to type === 'open', deduplicates, sorts A–Z.
+  // Automatically reacts when a job is moved to 'hired' or 'budgeted'.
+
+  const openRoleOptions = useMemo(() =>
+    [...new Set(
+      jobs
+        .filter((j) => j.type === 'open' && j.role_name?.trim())
+        .map((j) => j.role_name as string),
+    )].sort((a, b) => a.localeCompare(b)),
+  [jobs]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (activeModule === 'jobs') {
@@ -132,6 +144,7 @@ export default function AppShell() {
       onAddCandidate={addCandidate}
       onDeleteCandidate={deleteCandidate}
       onSwitchToJobs={() => setActiveModule('jobs')}
+      roleOptions={openRoleOptions}
     />
   );
 }

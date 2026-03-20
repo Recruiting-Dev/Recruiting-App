@@ -47,11 +47,14 @@ interface Props {
   defaultRole?: string;
   /** When true, the insert row opens immediately on mount. */
   initialInserting?: boolean;
+  /** When provided, the Role column renders as a dropdown instead of a free-text field.
+   *  Should contain only open-job role names, sorted A–Z. */
+  roleOptions?: string[];
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-export default function CandidateSheet({ candidates, onSaveCell, onDelete, onInsertRow, defaultRole, initialInserting }: Props) {
+export default function CandidateSheet({ candidates, onSaveCell, onDelete, onInsertRow, defaultRole, initialInserting, roleOptions }: Props) {
   // Existing-row editing state
   const [editingCell, setEditingCell] = useState<CellRef | null>(null);
   const [editDraft, setEditDraft] = useState('');
@@ -388,13 +391,26 @@ export default function CandidateSheet({ candidates, onSaveCell, onDelete, onIns
                   />
                 </td>
                 <td className="p-2">
-                  <input
-                    className={newCellInput}
-                    value={newRow.role}
-                    onChange={(e) => setNewField('role', e.target.value)}
-                    onKeyDown={newRowKeyDown}
-                    placeholder="Role"
-                  />
+                  {roleOptions && roleOptions.length > 0 ? (
+                    <select
+                      className={newCellInput}
+                      value={newRow.role}
+                      onChange={(e) => setNewField('role', e.target.value)}
+                    >
+                      <option value="">— Select role —</option>
+                      {roleOptions.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className={newCellInput}
+                      value={newRow.role}
+                      onChange={(e) => setNewField('role', e.target.value)}
+                      onKeyDown={newRowKeyDown}
+                      placeholder="Role"
+                    />
+                  )}
                 </td>
                 <td className="p-2">
                   <select
@@ -467,7 +483,9 @@ export default function CandidateSheet({ candidates, onSaveCell, onDelete, onIns
             {visibleCandidates.map((c) => (
               <tr key={c.id} className="group border-t border-slate-800 hover:bg-slate-800/20 transition-colors">
                 <TextCell c={c} col="name" />
-                <TextCell c={c} col="role" />
+                {roleOptions && roleOptions.length > 0
+                  ? <SelectCell c={c} col="role" options={roleOptions} />
+                  : <TextCell c={c} col="role" />}
                 <SelectCell c={c} col="stage" options={STAGES} renderDisplay={(v) => (
                   <span className="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-full text-xs">{v || 'Round 1'}</span>
                 )} />

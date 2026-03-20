@@ -59,9 +59,6 @@ export interface ColumnConfig {
 export const JOB_TYPES = ['open', 'hired', 'budgeted'] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 
-export const JOB_FUNCTIONS = ['Commercial', 'Operate', 'Marketing'] as const;
-export type JobFunction = (typeof JOB_FUNCTIONS)[number];
-
 export const SOURCE_OPTIONS = [
   'Sourced by Tony',
   'Sourced by Andrea',
@@ -79,7 +76,7 @@ export interface Job {
   start_date?: string | null;
   recruiting_owner?: string | null;
   hiring_manager?: string | null;
-  function?: JobFunction | string | null;
+  function?: string | null;
   source?: SourceValue | string | null;
   notes?: string | null;
   created_at?: string | null;
@@ -95,7 +92,7 @@ export const JOB_COLUMNS: ColumnConfig[] = [
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
   { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
-  { key: 'function',         label: 'Function',          type: 'select', options: JOB_FUNCTIONS },
+  { key: 'function',         label: 'Function',          type: 'text' },
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];
 
@@ -110,7 +107,7 @@ export const HIRED_JOB_COLUMNS: ColumnConfig[] = [
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
   { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
-  { key: 'function',         label: 'Function',          type: 'select', options: JOB_FUNCTIONS },
+  { key: 'function',         label: 'Function',          type: 'text' },
   { key: 'source',           label: 'Source',            type: 'select', options: SOURCE_OPTIONS },
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];

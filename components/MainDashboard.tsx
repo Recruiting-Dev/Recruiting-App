@@ -15,6 +15,7 @@ interface Props {
   onAddCandidate: (data: CandidateInsert) => Promise<void>;
   onDeleteCandidate: (id: string) => Promise<void>;
   onSwitchToJobs: () => void;
+  roleOptions: string[];
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -28,6 +29,7 @@ export default function MainDashboard({
   onAddCandidate,
   onDeleteCandidate,
   onSwitchToJobs,
+  roleOptions,
 }: Props) {
   const [view, setView] = useState<View>('landing');
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -82,6 +84,7 @@ export default function MainDashboard({
               onSaveCell={onUpdateCandidate}
               onDelete={onDeleteCandidate}
               onInsertRow={(data) => onAddCandidate({ ...data, category: 'commercial' })}
+              roleOptions={roleOptions}
             />
           </>
         )}
@@ -105,6 +108,7 @@ export default function MainDashboard({
               onDelete={onDeleteCandidate}
               onInsertRow={(data) => onAddCandidate({ ...data, category: 'non-commercial' })}
               onGoHome={goToLanding}
+              roleOptions={roleOptions}
             />
           </>
         )}
