@@ -50,7 +50,7 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
 
   const makeEmptyDraft = (): Record<string, string> =>
     Object.fromEntries(
-      columns.map((c) => [c.key, c.type === 'select' && c.options ? c.options[0] : ''])
+      columns.map((c) => [c.key, c.defaultValue ?? (c.type === 'select' && c.options ? c.options[0] : '')])
     );
 
   const [isInserting, setIsInserting] = useState(false);
@@ -96,6 +96,10 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
 
   const startEdit = (id: string, col: string, value: string) => {
     setEditingCell({ id, col });
+    if (!value) {
+      const cfg = columns.find((c) => c.key === col);
+      if (cfg?.defaultValue) { setEditDraft(cfg.defaultValue); return; }
+    }
     setEditDraft(value);
   };
 
@@ -117,7 +121,14 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
       isSaved(id, col) ? 'border-green-500 bg-green-950/20' : 'border-transparent'
     }`;
 
-  const displayVal = (row: Row, col: string) => (row[col] ?? '') as string;
+  const displayVal = (row: Row, colKey: string) => {
+    const raw = (row[colKey] ?? '') as string;
+    if (!raw) {
+      const cfg = columns.find((c) => c.key === colKey);
+      if (cfg?.defaultValue) return cfg.defaultValue;
+    }
+    return raw;
+  };
 
   // ── Sort ─────────────────────────────────────────────────────────────────
   // Only columns with sortable:true participate. Numeric natural sort —

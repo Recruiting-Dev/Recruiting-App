@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function LandingScreen({ onSelect, onJobsClick, permissions }: Props) {
-  const showNonCommercial = permissions.role === 'admin';
+  const showNonCommercial = permissions.role === 'admin' || permissions.role === 'manager';
 
   return (
     <div className="relative min-h-screen bg-[#020617] flex flex-col items-center justify-center gap-4">

@@ -93,15 +93,17 @@ export default function AppShell() {
     return jobs.filter((j) => allowedJobIds.includes(j.id));
   }, [jobs, permissionsLoading, userRole, allowedJobIds]);
 
-  // ── Open role options for candidate Role-Name dropdown ──────────────────────
+  // ── Role options split by function — used by each dashboard's filter + Role-Name dropdown ──
 
-  const openRoleOptions = useMemo(() =>
+  const makeRoleOptions = (fn: string) =>
     [...new Set(
       filteredJobs
-        .filter((j) => j.type === 'open' && j.role_name?.trim())
+        .filter((j) => j.type === 'open' && j.role_name?.trim() && j.function === fn)
         .map((j) => j.role_name as string),
-    )].sort((a, b) => a.localeCompare(b)),
-  [filteredJobs]);
+    )].sort((a, b) => a.localeCompare(b));
+
+  const commercialRoleOptions  = useMemo(() => makeRoleOptions('Commercial'),     [filteredJobs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const nonCommercialRoleOptions = useMemo(() => makeRoleOptions('Non-Commercial'), [filteredJobs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Assembled permissions object (passed to child UIs) ─────────────────────
 
@@ -209,7 +211,8 @@ export default function AppShell() {
       onAddCandidate={addCandidate}
       onDeleteCandidate={deleteCandidate}
       onSwitchToJobs={() => setActiveModule('jobs')}
-      roleOptions={openRoleOptions}
+      commercialRoleOptions={commercialRoleOptions}
+      nonCommercialRoleOptions={nonCommercialRoleOptions}
       permissions={permissions}
     />
   );

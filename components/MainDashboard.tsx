@@ -3,7 +3,6 @@ import { useState, useMemo } from 'react';
 import { type Candidate, type CandidateInsert, type UserPermissions } from '@/lib/types';
 import LandingScreen from '@/components/LandingScreen';
 import CandidateSheet from '@/components/CandidateSheet';
-import NonCommercialHub from '@/components/NonCommercialHub';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,14 +14,16 @@ interface Props {
   onAddCandidate: (data: CandidateInsert) => Promise<void>;
   onDeleteCandidate: (id: string) => Promise<void>;
   onSwitchToJobs: () => void;
-  roleOptions: string[];
+  commercialRoleOptions: string[];
+  nonCommercialRoleOptions: string[];
   permissions: UserPermissions;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 //
-// Manages only UI state (which view is active, which role is selected).
+// Manages only UI state (which view is active).
 // All data and mutations live in AppShell and are passed as props.
+// AppShell pre-filters candidates by permission level before they arrive here.
 
 export default function MainDashboard({
   candidates,
@@ -30,12 +31,16 @@ export default function MainDashboard({
   onAddCandidate,
   onDeleteCandidate,
   onSwitchToJobs,
-  roleOptions,
+  commercialRoleOptions,
+  nonCommercialRoleOptions,
   permissions,
 }: Props) {
   const [view, setView] = useState<View>('landing');
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [roleFilter, setRoleFilter] = useState<string>('');
+  const [commercialRoleFilter, setCommercialRoleFilter] = useState<string>('');
+  const [nonCommercialRoleFilter, setNonCommercialRoleFilter] = useState<string>('');
+
+  // ── Category splits ────────────────────────────────────────────────────────
+  // AppShell has already enforced permission filtering on `candidates`.
 
   const commercialCandidates = useMemo(
     () => candidates.filter((c) => (c.category ?? '').toLowerCase() === 'commercial'),
@@ -47,20 +52,30 @@ export default function MainDashboard({
     [candidates],
   );
 
-  // Further filter commercial candidates by role when a filter is selected
-  const visibleCommercialCandidates = useMemo(() => {
-    if (!roleFilter) return commercialCandidates;
-    return commercialCandidates.filter((c) => c.role === roleFilter);
-  }, [commercialCandidates, roleFilter]);
+  // ── Visible rows after applying dropdown filters ───────────────────────────
 
-  const goToLanding = () => { setView('landing'); setSelectedRole(null); setRoleFilter(''); };
+  const visibleCommercialCandidates = useMemo(() => {
+    if (!commercialRoleFilter) return commercialCandidates;
+    return commercialCandidates.filter((c) => c.role === commercialRoleFilter);
+  }, [commercialCandidates, commercialRoleFilter]);
+
+  const visibleNonCommercialCandidates = useMemo(() => {
+    if (!nonCommercialRoleFilter) return nonCommercialCandidates;
+    return nonCommercialCandidates.filter((c) => c.role === nonCommercialRoleFilter);
+  }, [nonCommercialCandidates, nonCommercialRoleFilter]);
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+
+  const goToLanding = () => {
+    setView('landing');
+    setCommercialRoleFilter('');
+    setNonCommercialRoleFilter('');
+  };
 
   const handleCategorySelect = (category: 'commercial' | 'non-commercial') => {
-    // Only admin can navigate to non-commercial
-    if (category === 'non-commercial' && permissions.role !== 'admin') return;
-    setView(category === 'commercial' ? 'commercial' : 'non-commercial');
-    setSelectedRole(null);
-    setRoleFilter('');
+    // global_commercial cannot navigate to non-commercial
+    if (category === 'non-commercial' && permissions.role === 'global_commercial') return;
+    setView(category);
   };
 
   // ── Landing ────────────────────────────────────────────────────────────────
@@ -75,10 +90,10 @@ export default function MainDashboard({
     );
   }
 
-  // ── Pipeline views ─────────────────────────────────────────────────────────
+  // ── Manager with no roles assigned ─────────────────────────────────────────
 
-  // Manager with no assigned roles: show empty state
-  if (view === 'commercial' && permissions.role === 'manager' && permissions.allowedRoleNames.length === 0) {
+  if (permissions.role === 'manager' && permissions.allowedRoleNames.length === 0) {
+    const label = view === 'commercial' ? 'Commercial' : 'Non-Commercial';
     return (
       <div className="min-h-screen bg-[#020617] text-slate-100 p-8">
         <div className="max-w-7xl mx-auto">
@@ -86,7 +101,7 @@ export default function MainDashboard({
             <button onClick={goToLanding} className="text-slate-400 hover:text-slate-200 text-sm transition-colors">
               ← Home
             </button>
-            <h1 className="text-2xl font-bold">Commercial</h1>
+            <h1 className="text-2xl font-bold">{label}</h1>
           </header>
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <p className="text-slate-500 text-sm">No roles assigned. Please contact your administrator.</p>
@@ -96,10 +111,15 @@ export default function MainDashboard({
     );
   }
 
+  // ── Pipeline views ─────────────────────────────────────────────────────────
+
+  const isAdmin = permissions.role === 'admin';
+
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 p-8">
       <div className="max-w-7xl mx-auto">
 
+        {/* ── Commercial ── */}
         {view === 'commercial' && (
           <>
             <header className="flex items-center gap-4 mb-8">
@@ -111,16 +131,16 @@ export default function MainDashboard({
               </button>
               <h1 className="text-2xl font-bold">Commercial</h1>
 
-              {/* Role filter — visible to admin and global_commercial only */}
-              {permissions.role !== 'manager' && roleOptions.length > 0 && (
+              {/* Role filter — admin and global_commercial only */}
+              {permissions.role !== 'manager' && commercialRoleOptions.length > 0 && (
                 <div className="ml-auto">
                   <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
+                    value={commercialRoleFilter}
+                    onChange={(e) => setCommercialRoleFilter(e.target.value)}
                     className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500"
                   >
                     <option value="">All Roles</option>
-                    {roleOptions.map((r) => (
+                    {commercialRoleOptions.map((r) => (
                       <option key={r} value={r}>{r}</option>
                     ))}
                   </select>
@@ -132,12 +152,13 @@ export default function MainDashboard({
               onSaveCell={onUpdateCandidate}
               onDelete={onDeleteCandidate}
               onInsertRow={(data) => onAddCandidate({ ...data, category: 'commercial' })}
-              roleOptions={roleOptions}
+              roleOptions={commercialRoleOptions}
             />
           </>
         )}
 
-        {view === 'non-commercial' && permissions.role === 'admin' && (
+        {/* ── Non-Commercial ── */}
+        {view === 'non-commercial' && (
           <>
             <header className="flex items-center gap-4 mb-8">
               <button
@@ -147,16 +168,29 @@ export default function MainDashboard({
                 ← Home
               </button>
               <h1 className="text-2xl font-bold">Non-Commercial</h1>
+
+              {/* Role filter — admin only */}
+              {isAdmin && nonCommercialRoleOptions.length > 0 && (
+                <div className="ml-auto">
+                  <select
+                    value={nonCommercialRoleFilter}
+                    onChange={(e) => setNonCommercialRoleFilter(e.target.value)}
+                    className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">All Roles</option>
+                    {nonCommercialRoleOptions.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </header>
-            <NonCommercialHub
-              candidates={nonCommercialCandidates}
-              selectedRole={selectedRole}
-              onSelectRole={setSelectedRole}
+            <CandidateSheet
+              candidates={visibleNonCommercialCandidates}
               onSaveCell={onUpdateCandidate}
               onDelete={onDeleteCandidate}
               onInsertRow={(data) => onAddCandidate({ ...data, category: 'non-commercial' })}
-              onGoHome={goToLanding}
-              roleOptions={roleOptions}
+              roleOptions={nonCommercialRoleOptions}
             />
           </>
         )}

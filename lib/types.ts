@@ -52,6 +52,11 @@ export interface ColumnConfig {
   options?: readonly string[];
   /** When true, clicking the column header toggles numeric ascending/descending sort. */
   sortable?: boolean;
+  /**
+   * For select columns: value to display and pre-select when the stored value is null/empty.
+   * Prevents showing "—" for rows that were inserted before a default was set.
+   */
+  defaultValue?: string;
 }
 
 // ── Jobs ─────────────────────────────────────────────────────────────────────
@@ -86,13 +91,15 @@ export interface Job {
 export type JobInsert = Omit<Job, 'id' | 'created_at' | 'updated_at'>;
 
 /** Column layout for Open and Budgeted dashboards. */
+export const FUNCTION_OPTIONS = ['Commercial', 'Non-Commercial'] as const;
+
 export const JOB_COLUMNS: ColumnConfig[] = [
   { key: 'priority',         label: 'Priority',          type: 'text', sortable: true },
   { key: 'role_name',        label: 'Role Name',         type: 'text' },
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
   { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
-  { key: 'function',         label: 'Function',          type: 'text' },
+  { key: 'function',         label: 'Function',          type: 'select', options: FUNCTION_OPTIONS, defaultValue: 'Commercial' },
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];
 
@@ -107,7 +114,7 @@ export const HIRED_JOB_COLUMNS: ColumnConfig[] = [
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
   { key: 'hiring_manager',   label: 'Hiring Manager',    type: 'text' },
-  { key: 'function',         label: 'Function',          type: 'text' },
+  { key: 'function',         label: 'Function',          type: 'select', options: FUNCTION_OPTIONS, defaultValue: 'Commercial' },
   { key: 'source',           label: 'Source',            type: 'select', options: SOURCE_OPTIONS },
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];
