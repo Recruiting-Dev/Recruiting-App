@@ -93,6 +93,36 @@ export default function AppShell() {
     return jobs.filter((j) => allowedJobIds.includes(j.id));
   }, [jobs, permissionsLoading, userRole, allowedJobIds]);
 
+  // ── Lookup: role_name → job.function (from ALL jobs, not permission-filtered) ──────────────
+  // Used to decide which dashboard a candidate belongs to, independently of the
+  // candidate's own `category` field. When a job's function changes, this map
+  // recomputes and both candidate splits below update instantly.
+
+  const roleFunctionMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const j of jobs) {
+      if (j.role_name) map.set(j.role_name, j.function ?? 'Commercial');
+    }
+    return map;
+  }, [jobs]);
+
+  // ── Split permission-filtered candidates by their job's function ─────────────────────────
+
+  const commercialCandidates = useMemo(() =>
+    filteredCandidates.filter((c) => {
+      const fn = c.role ? roleFunctionMap.get(c.role) : undefined;
+      // Fall back to candidate.category when the role has no matching job
+      return fn ? fn === 'Commercial' : (c.category ?? '').toLowerCase() === 'commercial';
+    }),
+  [filteredCandidates, roleFunctionMap]);
+
+  const nonCommercialCandidates = useMemo(() =>
+    filteredCandidates.filter((c) => {
+      const fn = c.role ? roleFunctionMap.get(c.role) : undefined;
+      return fn ? fn === 'Non-Commercial' : (c.category ?? '').toLowerCase() === 'non-commercial';
+    }),
+  [filteredCandidates, roleFunctionMap]);
+
   // ── Role options split by function — used by each dashboard's filter + Role-Name dropdown ──
 
   const makeRoleOptions = (fn: string) =>
@@ -206,7 +236,8 @@ export default function AppShell() {
 
   return (
     <MainDashboard
-      candidates={filteredCandidates}
+      commercialCandidates={commercialCandidates}
+      nonCommercialCandidates={nonCommercialCandidates}
       onUpdateCandidate={updateCandidate}
       onAddCandidate={addCandidate}
       onDeleteCandidate={deleteCandidate}

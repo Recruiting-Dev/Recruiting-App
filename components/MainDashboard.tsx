@@ -9,7 +9,8 @@ import CandidateSheet from '@/components/CandidateSheet';
 type View = 'landing' | 'commercial' | 'non-commercial';
 
 interface Props {
-  candidates: Candidate[];
+  commercialCandidates: Candidate[];
+  nonCommercialCandidates: Candidate[];
   onUpdateCandidate: (id: string, field: keyof CandidateInsert, value: string) => Promise<void>;
   onAddCandidate: (data: CandidateInsert) => Promise<void>;
   onDeleteCandidate: (id: string) => Promise<void>;
@@ -22,11 +23,12 @@ interface Props {
 // ── Component ─────────────────────────────────────────────────────────────────
 //
 // Manages only UI state (which view is active).
-// All data and mutations live in AppShell and are passed as props.
-// AppShell pre-filters candidates by permission level before they arrive here.
+// All data, permission filtering, and job-function-based category splits live
+// in AppShell and arrive here as ready-to-render arrays.
 
 export default function MainDashboard({
-  candidates,
+  commercialCandidates,
+  nonCommercialCandidates,
   onUpdateCandidate,
   onAddCandidate,
   onDeleteCandidate,
@@ -39,20 +41,7 @@ export default function MainDashboard({
   const [commercialRoleFilter, setCommercialRoleFilter] = useState<string>('');
   const [nonCommercialRoleFilter, setNonCommercialRoleFilter] = useState<string>('');
 
-  // ── Category splits ────────────────────────────────────────────────────────
-  // AppShell has already enforced permission filtering on `candidates`.
-
-  const commercialCandidates = useMemo(
-    () => candidates.filter((c) => (c.category ?? '').toLowerCase() === 'commercial'),
-    [candidates],
-  );
-
-  const nonCommercialCandidates = useMemo(
-    () => candidates.filter((c) => (c.category ?? '').toLowerCase() === 'non-commercial'),
-    [candidates],
-  );
-
-  // ── Visible rows after applying dropdown filters ───────────────────────────
+  // ── Visible rows after applying role filter dropdown ───────────────────────
 
   const visibleCommercialCandidates = useMemo(() => {
     if (!commercialRoleFilter) return commercialCandidates;
