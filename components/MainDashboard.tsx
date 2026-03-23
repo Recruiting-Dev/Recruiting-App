@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { type Candidate, type CandidateInsert, type UserPermissions } from '@/lib/types';
+import { type Candidate, type CandidateInsert, type UserPermissions, STAGE_WEIGHT } from '@/lib/types';
 import LandingScreen from '@/components/LandingScreen';
 import CandidateSheet from '@/components/CandidateSheet';
 import TableHint from '@/components/TableHint';
@@ -42,16 +42,23 @@ export default function MainDashboard({
   const [commercialRoleFilter, setCommercialRoleFilter] = useState<string>('');
   const [nonCommercialRoleFilter, setNonCommercialRoleFilter] = useState<string>('');
 
-  // ── Visible rows after applying role filter dropdown ───────────────────────
+  // ── Visible rows: filter by role dropdown, then sort by reverse-funnel stage ─
+
+  const stageSort = (a: Candidate, b: Candidate) =>
+    (STAGE_WEIGHT[a.stage ?? ''] ?? 50) - (STAGE_WEIGHT[b.stage ?? ''] ?? 50);
 
   const visibleCommercialCandidates = useMemo(() => {
-    if (!commercialRoleFilter) return commercialCandidates;
-    return commercialCandidates.filter((c) => c.role === commercialRoleFilter);
+    const filtered = !commercialRoleFilter
+      ? commercialCandidates
+      : commercialCandidates.filter((c) => c.role === commercialRoleFilter);
+    return [...filtered].sort(stageSort);
   }, [commercialCandidates, commercialRoleFilter]);
 
   const visibleNonCommercialCandidates = useMemo(() => {
-    if (!nonCommercialRoleFilter) return nonCommercialCandidates;
-    return nonCommercialCandidates.filter((c) => c.role === nonCommercialRoleFilter);
+    const filtered = !nonCommercialRoleFilter
+      ? nonCommercialCandidates
+      : nonCommercialCandidates.filter((c) => c.role === nonCommercialRoleFilter);
+    return [...filtered].sort(stageSort);
   }, [nonCommercialCandidates, nonCommercialRoleFilter]);
 
   // ── Navigation ─────────────────────────────────────────────────────────────

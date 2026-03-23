@@ -1,5 +1,5 @@
 export const STAGES = [
-  'Round 1',
+  'Recruiting Screen',
   'Round 2',
   'Round 3',
   'Assignment',
@@ -9,6 +9,22 @@ export const STAGES = [
   'Offer Declined',
 ] as const;
 export type StageValue = (typeof STAGES)[number];
+
+/**
+ * Reverse-funnel sort weights for the candidate pipeline.
+ * Lower number = closer to hire = appears at the top.
+ * Unrecognised / null stages default to 50 (below active, above declined).
+ */
+export const STAGE_WEIGHT: Record<string, number> = {
+  'Pending Start':     1,
+  'Offer':             2,
+  'Final':             3,
+  'Assignment':        4,
+  'Round 3':           5,
+  'Round 2':           6,
+  'Recruiting Screen': 7,
+  'Offer Declined':    99,
+};
 
 export const STATUS_OPTIONS = ['Active', 'On Hold', 'Rejected', 'Hired', 'Offer Declined'] as const;
 export type StatusValue = (typeof STATUS_OPTIONS)[number];

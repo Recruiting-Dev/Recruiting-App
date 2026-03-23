@@ -2,7 +2,7 @@
 import type React from 'react';
 import { useState, useMemo, useCallback } from 'react';
 import {
-  STAGES, STATUS_OPTIONS,
+  STAGES, STATUS_OPTIONS, STAGE_WEIGHT,
   type Candidate, type CandidateInsert, type StageValue, type StatusValue,
   getStatusColor,
 } from '@/lib/types';
@@ -28,7 +28,7 @@ type NewRowDraft = {
 const EMPTY_DRAFT: NewRowDraft = {
   name: '',
   role: '',
-  stage: 'Round 1',
+  stage: 'Recruiting Screen',
   stage_details: '',
   status: 'Active',
   notes: '',
@@ -88,10 +88,11 @@ export default function CandidateSheet({ candidates, onSaveCell, onDelete, onIns
       const status = (c.status ?? '') as string;
       return Array.from(selectedStatuses).some((s) => s.toLowerCase() === status.toLowerCase());
     });
+    // Reverse-funnel: candidates closest to hire appear first.
+    // Unknown/null stage → weight 50 (below active funnel, above Offer Declined).
     return [...list].sort(
       (a, b) =>
-        (b.created_at ? new Date(b.created_at).getTime() : 0) -
-        (a.created_at ? new Date(a.created_at).getTime() : 0),
+        (STAGE_WEIGHT[a.stage ?? ''] ?? 50) - (STAGE_WEIGHT[b.stage ?? ''] ?? 50),
     );
   }, [candidates, selectedStatuses]);
 
@@ -487,7 +488,7 @@ export default function CandidateSheet({ candidates, onSaveCell, onDelete, onIns
                   ? <SelectCell c={c} col="role" options={roleOptions} />
                   : <TextCell c={c} col="role" />}
                 <SelectCell c={c} col="stage" options={STAGES} renderDisplay={(v) => (
-                  <span className="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-full text-xs">{v || 'Round 1'}</span>
+                  <span className="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-full text-xs">{v || 'Recruiting Screen'}</span>
                 )} />
                 <TextCell c={c} col="stage_details" />
                 <SelectCell c={c} col="status" options={STATUS_OPTIONS as unknown as string[]} renderDisplay={(v) => (
