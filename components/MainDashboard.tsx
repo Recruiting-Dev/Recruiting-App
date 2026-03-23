@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { type Candidate, type CandidateInsert, type UserPermissions } from '@/lib/types';
 import LandingScreen from '@/components/LandingScreen';
 import CandidateSheet from '@/components/CandidateSheet';
+import TableHint from '@/components/TableHint';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,8 +63,8 @@ export default function MainDashboard({
   };
 
   const handleCategorySelect = (category: 'commercial' | 'non-commercial') => {
-    // global_commercial cannot navigate to non-commercial
-    if (category === 'non-commercial' && permissions.role === 'global_commercial') return;
+    const fn = category === 'commercial' ? 'Commercial' : 'Non-Commercial';
+    if (!permissions.allowedCategories.includes(fn)) return;
     setView(category);
   };
 
@@ -118,7 +119,7 @@ export default function MainDashboard({
               >
                 ← Home
               </button>
-              <h1 className="text-2xl font-bold">Commercial</h1>
+              <h1 className="text-2xl font-bold">{isAdmin ? 'Commercial' : 'Your Candidate Pipeline'}</h1>
 
               {/* Role filter — admin and global_commercial only */}
               {permissions.role !== 'manager' && commercialRoleOptions.length > 0 && (
@@ -136,6 +137,7 @@ export default function MainDashboard({
                 </div>
               )}
             </header>
+            <TableHint />
             <CandidateSheet
               candidates={visibleCommercialCandidates}
               onSaveCell={onUpdateCandidate}
@@ -156,7 +158,7 @@ export default function MainDashboard({
               >
                 ← Home
               </button>
-              <h1 className="text-2xl font-bold">Non-Commercial</h1>
+              <h1 className="text-2xl font-bold">{isAdmin ? 'Non-Commercial' : 'Your Candidate Pipeline'}</h1>
 
               {/* Role filter — admin only */}
               {isAdmin && nonCommercialRoleOptions.length > 0 && (
@@ -174,6 +176,7 @@ export default function MainDashboard({
                 </div>
               )}
             </header>
+            <TableHint />
             <CandidateSheet
               candidates={visibleNonCommercialCandidates}
               onSaveCell={onUpdateCandidate}

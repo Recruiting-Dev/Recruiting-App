@@ -1,7 +1,8 @@
 'use client';
 import { useState, useMemo, useCallback } from 'react';
-import { JOB_COLUMNS, HIRED_JOB_COLUMNS, type Job, type JobInsert, type JobType } from '@/lib/types';
+import { JOB_COLUMNS, HIRED_JOB_COLUMNS, type Job, type JobInsert, type JobType, type UserPermissions } from '@/lib/types';
 import GenericSpreadsheet from '@/components/GenericSpreadsheet';
+import TableHint from '@/components/TableHint';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ interface Props {
   onAddJob: (payload: JobInsert) => Promise<void>;
   onDeleteJob: (id: string) => Promise<void>;
   onSwitchToHome: () => void;
+  permissions: UserPermissions;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -39,7 +41,9 @@ export default function JobsManager({
   onAddJob,
   onDeleteJob,
   onSwitchToHome,
+  permissions,
 }: Props) {
+  const readOnly = permissions.role !== 'admin';
   const [view, setView] = useState<View>('menu');
 
   // ── In-memory split — instant tab switching ────────────────────────────────
@@ -126,12 +130,15 @@ export default function JobsManager({
           <h1 className="text-2xl font-bold">{TITLE_MAP[view]}</h1>
         </header>
 
+        {!readOnly && <TableHint />}
         <GenericSpreadsheet
           columns={activeColumns}
           rows={jobsByType[view] as (Job & Record<string, string | null | undefined>)[]}
           onSaveCell={onUpdateJob}
           onInsertRow={handleInsertRow}
           onDeleteRow={onDeleteJob}
+          defaultSort={view !== 'hired' ? { col: 'priority', dir: 'asc' } : undefined}
+          readOnly={readOnly}
         />
       </div>
     </div>

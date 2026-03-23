@@ -17,6 +17,10 @@ interface Props {
   onSaveCell: (id: string, field: string, value: string) => Promise<void>;
   onInsertRow: (data: Record<string, string>) => Promise<void>;
   onDeleteRow: (id: string) => Promise<void>;
+  /** Initial sort applied on first render. User can still override by clicking a header. */
+  defaultSort?: { col: string; dir: 'asc' | 'desc' };
+  /** When true, disables all editing: no cell clicks, no context menu, no insert, no delete. */
+  readOnly?: boolean;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -29,7 +33,7 @@ const editInputCls =
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDeleteRow }: Props) {
+function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDeleteRow, defaultSort, readOnly = false }: Props) {
   // ── Existing-row edit state ──────────────────────────────────────────────
 
   const [editingCell, setEditingCell] = useState<CellRef | null>(null);
@@ -42,6 +46,7 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
   const handleContextMenu = (e: React.MouseEvent) => {
+    if (readOnly) return;
     e.preventDefault();
     setContextMenu({ x: e.clientX, y: e.clientY });
   };
@@ -136,7 +141,9 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
   // always pushed to the bottom regardless of sort direction.
 
   type SortDir = 'asc' | 'desc';
-  const [sortState, setSortState] = useState<{ col: string; dir: SortDir } | null>(null);
+  const [sortState, setSortState] = useState<{ col: string; dir: SortDir } | null>(
+    defaultSort ?? null
+  );
 
   const toggleSort = (col: ColumnConfig) => {
     if (!col.sortable) return;
@@ -215,17 +222,19 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
                   {sortIcon(col)}
                 </th>
               ))}
-              <th className="p-3 w-12" />
+              {!readOnly && <th className="p-3 w-12" />}
             </tr>
           </thead>
 
           <tbody>
             {/* ── Inline insert row ── */}
-            {isInserting && (
+            {!readOnly && isInserting && (
               <tr className="border-b border-blue-500/20 bg-blue-950/10">
                 {columns.map((col, i) => (
                   <td key={col.key} className="p-2">
-                    {col.type === 'select' && col.options ? (
+                    {col.visualIndex ? (
+                      <span className="text-slate-600 text-sm px-1">—</span>
+                    ) : col.type === 'select' && col.options ? (
                       <select
                         className={inputCls}
                         value={newRow[col.key] ?? ''}
@@ -275,12 +284,16 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
             )}
 
             {/* ── Existing rows (sorted) ── */}
-            {sortedRows.map((row) => (
+            {sortedRows.map((row, rowIndex) => (
               <tr key={row.id} className="group border-t border-slate-800 hover:bg-slate-800/20 transition-colors">
                 {columns.map((col) => (
                   <td key={col.key} className={cellCls(row.id, col.key)}>
-                    {col.type === 'select' && col.options ? (
-                      isEditing(row.id, col.key) ? (
+                    {col.visualIndex ? (
+                      <span className="text-slate-400 font-mono text-sm px-1 select-none">
+                        {rowIndex + 1}
+                      </span>
+                    ) : col.type === 'select' && col.options ? (
+                      !readOnly && isEditing(row.id, col.key) ? (
                         <select
                           className={editInputCls}
                           value={editDraft}
@@ -295,8 +308,8 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
                         </select>
                       ) : (
                         <div
-                          className="min-h-[28px] cursor-pointer rounded px-1 -mx-1 hover:bg-slate-800/50 flex items-center gap-1"
-                          onClick={() => startEdit(row.id, col.key, displayVal(row, col.key))}
+                          className={`min-h-[28px] rounded px-1 -mx-1 flex items-center gap-1 ${readOnly ? '' : 'cursor-pointer hover:bg-slate-800/50'}`}
+                          onClick={readOnly ? undefined : () => startEdit(row.id, col.key, displayVal(row, col.key))}
                         >
                           <span className="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-full text-xs">
                             {displayVal(row, col.key) || '—'}
@@ -307,7 +320,7 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
                         </div>
                       )
                     ) : (
-                      isEditing(row.id, col.key) ? (
+                      !readOnly && isEditing(row.id, col.key) ? (
                         <input
                           className={editInputCls}
                           value={editDraft}
@@ -321,8 +334,8 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
                         />
                       ) : (
                         <div
-                          className="min-h-[28px] cursor-text rounded px-1 -mx-1 hover:bg-slate-800/50 flex items-center gap-1 max-w-[200px] truncate"
-                          onClick={() => startEdit(row.id, col.key, displayVal(row, col.key))}
+                          className={`min-h-[28px] rounded px-1 -mx-1 flex items-center gap-1 max-w-[200px] truncate ${readOnly ? '' : 'cursor-text hover:bg-slate-800/50'}`}
+                          onClick={readOnly ? undefined : () => startEdit(row.id, col.key, displayVal(row, col.key))}
                           title={displayVal(row, col.key) || undefined}
                         >
                           {displayVal(row, col.key) || '—'}
@@ -341,16 +354,18 @@ function GenericSpreadsheetInner({ columns, rows, onSaveCell, onInsertRow, onDel
                   </td>
                 ))}
 
-                <td className="p-2 align-middle text-center">
-                  <button
-                    type="button"
-                    onClick={() => onDeleteRow(row.id)}
-                    className="inline-flex items-center justify-center rounded-full p-1.5 text-rose-500/70 hover:text-rose-400 hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete row"
-                  >
-                    <TrashIcon />
-                  </button>
-                </td>
+                {!readOnly && (
+                  <td className="p-2 align-middle text-center">
+                    <button
+                      type="button"
+                      onClick={() => onDeleteRow(row.id)}
+                      className="inline-flex items-center justify-center rounded-full p-1.5 text-rose-500/70 hover:text-rose-400 hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Delete row"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
 

@@ -88,7 +88,8 @@ export default function AppShell() {
 
   const filteredJobs = useMemo(() => {
     if (permissionsLoading) return [];
-    if (userRole === 'admin' || userRole === 'global_commercial') return jobs;
+    if (userRole === 'admin') return jobs;
+    if (userRole === 'global_commercial') return jobs.filter((j) => j.function === 'Commercial');
     // manager: only their explicitly assigned jobs
     return jobs.filter((j) => allowedJobIds.includes(j.id));
   }, [jobs, permissionsLoading, userRole, allowedJobIds]);
@@ -137,11 +138,28 @@ export default function AppShell() {
 
   // ── Assembled permissions object (passed to child UIs) ─────────────────────
 
+  // ── Which function categories does this user have access to ─────────────────
+  // Used by LandingScreen to show/hide tiles dynamically.
+
+  const allowedCategories = useMemo(() => {
+    if (userRole === 'admin') return ['Commercial', 'Non-Commercial'];
+    if (userRole === 'global_commercial') return ['Commercial'];
+    // manager: derive from whichever functions appear in their assigned jobs
+    const fns = new Set(
+      jobs
+        .filter((j) => allowedJobIds.includes(j.id))
+        .map((j) => j.function)
+        .filter(Boolean) as string[]
+    );
+    return Array.from(fns);
+  }, [userRole, allowedJobIds, jobs]);
+
   const permissions: UserPermissions = {
     loading: permissionsLoading,
     role: userRole,
     allowedJobIds,
     allowedRoleNames: allowedRoleNames ?? [],
+    allowedCategories,
   };
 
   // ── Candidate mutations ─────────────────────────────────────────────────────
@@ -230,6 +248,7 @@ export default function AppShell() {
         onAddJob={addJob}
         onDeleteJob={deleteJob}
         onSwitchToHome={() => setActiveModule('home')}
+        permissions={permissions}
       />
     );
   }

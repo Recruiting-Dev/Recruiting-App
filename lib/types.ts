@@ -53,6 +53,12 @@ export interface ColumnConfig {
   /** When true, clicking the column header toggles numeric ascending/descending sort. */
   sortable?: boolean;
   /**
+   * When true, the cell displays the row's 1-based position in the current sorted order
+   * instead of the raw database value. Useful for priority columns where permission
+   * filtering creates gaps in the stored sequence.
+   */
+  visualIndex?: boolean;
+  /**
    * For select columns: value to display and pre-select when the stored value is null/empty.
    * Prevents showing "—" for rows that were inserted before a default was set.
    */
@@ -94,7 +100,7 @@ export type JobInsert = Omit<Job, 'id' | 'created_at' | 'updated_at'>;
 export const FUNCTION_OPTIONS = ['Commercial', 'Non-Commercial'] as const;
 
 export const JOB_COLUMNS: ColumnConfig[] = [
-  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true },
+  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true, visualIndex: true },
   { key: 'role_name',        label: 'Role Name',         type: 'text' },
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
@@ -138,6 +144,13 @@ export interface UserPermissions {
    * Used to filter candidate rows for managers.
    */
   allowedRoleNames: string[];
+  /**
+   * Which job-function categories ('Commercial', 'Non-Commercial') this user
+   * has at least one assigned job in. Drives LandingScreen tile visibility.
+   * Admins always get both. global_commercial always gets ['Commercial'].
+   * Managers get whichever functions appear in their assigned jobs.
+   */
+  allowedCategories: string[];
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
