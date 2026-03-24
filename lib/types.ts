@@ -116,7 +116,7 @@ export type JobInsert = Omit<Job, 'id' | 'created_at' | 'updated_at'>;
 export const FUNCTION_OPTIONS = ['Commercial', 'Non-Commercial'] as const;
 
 export const JOB_COLUMNS: ColumnConfig[] = [
-  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true, visualIndex: true },
+  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true },
   { key: 'role_name',        label: 'Role Name',         type: 'text' },
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
@@ -124,6 +124,11 @@ export const JOB_COLUMNS: ColumnConfig[] = [
   { key: 'function',         label: 'Function',          type: 'select', options: FUNCTION_OPTIONS, defaultValue: 'Commercial' },
   { key: 'notes',            label: 'Notes',             type: 'text' },
 ];
+
+/** Column layout for the Budgeted dashboard — no Priority column. */
+export const BUDGETED_JOB_COLUMNS: ColumnConfig[] = JOB_COLUMNS.filter(
+  (c) => c.key !== 'priority',
+);
 
 /** Column layout for the Hired dashboard.
  *  - No Priority column.

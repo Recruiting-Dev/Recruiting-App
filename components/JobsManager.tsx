@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useCallback } from 'react';
-import { JOB_COLUMNS, HIRED_JOB_COLUMNS, type Job, type JobInsert, type JobType, type UserPermissions } from '@/lib/types';
+import { JOB_COLUMNS, HIRED_JOB_COLUMNS, BUDGETED_JOB_COLUMNS, type Job, type JobInsert, type JobType, type UserPermissions } from '@/lib/types';
 import GenericSpreadsheet from '@/components/GenericSpreadsheet';
 import TableHint from '@/components/TableHint';
 
@@ -66,12 +66,16 @@ export default function JobsManager({
   // activeColumns drives both the table header and the insert-row form.
   // Swapping it here is the only change needed — GenericSpreadsheet and
   // AppShell require no modifications.
-  const activeColumns = view === 'hired' ? HIRED_JOB_COLUMNS : JOB_COLUMNS;
+  const activeColumns =
+    view === 'hired'    ? HIRED_JOB_COLUMNS    :
+    view === 'budgeted' ? BUDGETED_JOB_COLUMNS :
+    JOB_COLUMNS;
 
   const handleInsertRow = useCallback(async (data: Record<string, string>) => {
     const payload: JobInsert = {
       type:             view as JobType,
-      priority:         data.priority         || null,
+      // Budgeted view has no Priority column — omit the field entirely.
+      ...(view !== 'budgeted' && { priority: data.priority || null }),
       role_name:        data.role_name        || null,
       new_hire_name:    data.new_hire_name    || null,
       start_date:       data.start_date       || null,
@@ -137,7 +141,7 @@ export default function JobsManager({
           onSaveCell={onUpdateJob}
           onInsertRow={handleInsertRow}
           onDeleteRow={onDeleteJob}
-          defaultSort={view !== 'hired' ? { col: 'priority', dir: 'asc' } : undefined}
+          defaultSort={view === 'open' ? { col: 'priority', dir: 'asc' } : undefined}
           readOnly={readOnly}
         />
       </div>
