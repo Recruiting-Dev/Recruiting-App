@@ -116,7 +116,7 @@ export type JobInsert = Omit<Job, 'id' | 'created_at' | 'updated_at'>;
 export const FUNCTION_OPTIONS = ['Commercial', 'Non-Commercial'] as const;
 
 export const JOB_COLUMNS: ColumnConfig[] = [
-  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true },
+  { key: 'priority',         label: 'Priority',          type: 'text', sortable: true, visualIndex: true },
   { key: 'role_name',        label: 'Role Name',         type: 'text' },
   { key: 'start_date',       label: 'Start Date',        type: 'text' },
   { key: 'recruiting_owner', label: 'Recruiting Owner',  type: 'text' },
